@@ -33,7 +33,7 @@ if __name__ == "__main__":
 import requests
 
 # Example of sending a POST request to upload a file
-url = "https://ronyates47.pythonanywhere.com/upload"
+url = "https://genealogy-dataset-explorer.onrender.com/upload"
 files = {"file": open("DNA_Study_Library.xlsx", "rb")}
 response = requests.post(url, files=files)
 
