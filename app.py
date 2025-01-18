@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, render_template
 import pandas as pd
 import openai
 import os
@@ -7,33 +7,31 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 
 openai.api_key = os.getenv("OPENAI_API_KEY")  # Use your environment variable for security
 
-# Global variable to store the uploaded dataset
-dataset = None
+# Load the dataset from a fixed location on the server
+DATASET_PATH = "https://yates.one-name.net/gengen/static/datasets/DNA_Study_Library.xlsx"  # Update this path to your dataset's location
+dataset = None  # Global variable to store the dataset
+
+@app.before_first_request
+def load_dataset():
+    global dataset
+    try:
+        dataset = pd.read_excel(DATASET_PATH)
+        print(f"Dataset loaded successfully from {DATASET_PATH}")
+    except FileNotFoundError:
+        print(f"File not found at {DATASET_PATH}. Check the path and ensure the file exists.")
+    except Exception as e:
+        print(f"Error loading dataset: {e}")
+
 
 @app.route('/')
 def home():
     return render_template('index.html')  # Serve the HTML page
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    global dataset
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
-
-    file = request.files['file']
-    try:
-        # Read the uploaded file into a Pandas DataFrame
-        dataset = pd.read_excel(file)
-        dataset_html = dataset.head(10).to_html(index=False)  # Convert first 10 rows to HTML
-        return jsonify({'message': 'File uploaded successfully', 'data': dataset_html})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/query', methods=['POST'])
 def query():
     global dataset
     if dataset is None:
-        return jsonify({'error': 'No dataset uploaded'}), 400
+        return jsonify({'error': 'Dataset not available'}), 500
 
     user_query = request.json.get('query', '')
     if not user_query:
@@ -43,7 +41,7 @@ def query():
         # Convert the dataset to a CSV string
         dataset_string = dataset.to_csv(index=False)
 
-        # Send the dataset and query to ChatGPT using the updated API structure
+        # Send the dataset and query to ChatGPT
         response = openai.Chat.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -61,4 +59,3 @@ def query():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
