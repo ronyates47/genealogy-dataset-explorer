@@ -1,17 +1,19 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, send_from_directory
 import pandas as pd
+import openai
+import os
 
-app = Flask(__name__)  # Initialize Flask app
+app = Flask(__name__, static_folder='static', template_folder='templates')
+
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Use your environment variable for security
 
 # Global variable to store the uploaded dataset
 dataset = None
 
-# Basic route to verify the app is running
 @app.route('/')
 def home():
-    return "Flask app is running!"
+    return render_template('index.html')  # Serve the HTML page
 
-# Route to handle file uploads
 @app.route('/upload', methods=['POST'])
 def upload():
     global dataset
@@ -27,15 +29,31 @@ def upload():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/query', methods=['POST'])
+def query():
+    global dataset
+    if dataset is None:
+        return jsonify({'error': 'No dataset uploaded'}), 400
+
+    user_query = request.json.get('query', '')
+    if not user_query:
+        return jsonify({'error': 'No query provided'}), 400
+
+    try:
+        dataset_string = dataset.to_csv(index=False)
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a data analyst."},
+                {"role": "user", "content": f"Dataset: {dataset_string}\n\nQuery: {user_query}"}
+            ]
+        )
+        analysis = response['choices'][0]['message']['content']
+        return jsonify({'analysis': analysis})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True)
 
-import requests
-
-# Example of sending a POST request to upload a file
-url = "https://genealogy-dataset-explorer.onrender.com/upload"
-files = {"file": open("DNA_Study_Library.xlsx", "rb")}
-response = requests.post(url, files=files)
-
-print(response.text)  # Log the server's response
 
