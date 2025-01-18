@@ -50,13 +50,14 @@ def query():
         dataset_string = dataset.to_csv(index=False)
 
         # Send query to OpenAI
-        response = openai.ChatCompletion.create(
-            model="gpt-4",  # Adjust to the desired model
-            messages=[
-                {"role": "system", "content": "You are an expert data analyst."},
-                {"role": "user", "content": f"Dataset:\n{dataset_string}\n\nQuery: {user_query}"}
-            ],
-        )
+       response = openai.ChatCompletion.create(
+    model="gpt-3.5-turbo",
+    messages=[
+        {"role": "system", "content": "You are an expert data analyst."},
+        {"role": "user", "content": f"Dataset:\n{dataset_string}\n\nQuery: {user_query}"}
+    ],
+)
+
         analysis = response['choices'][0]['message']['content']
         
         return jsonify({'analysis': analysis})
