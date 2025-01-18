@@ -7,35 +7,22 @@
 </head>
 <body>
     <h1>Dataset Explorer</h1>
-
-    <!-- Query Input -->
-    <textarea id="query" placeholder="Ask questions about the data here (e.g., 'count number of rows')"></textarea>
+    <textarea id="query" placeholder="Enter your question..."></textarea>
     <button id="submit-query">Submit Query</button>
-
-    <!-- Response Display -->
-    <h3>Response:</h3>
-    <div id="response"></div>
-
-    <!-- JavaScript to Handle Queries -->
+    <div id="response">
+        <h2>Response:</h2>
+        <p id="response-text"></p>
+    </div>
     <script>
-        document.getElementById('submit-query').onclick = async () => {
+        document.getElementById('submit-query').onclick = async function () {
             const query = document.getElementById('query').value;
-            const responseElement = document.getElementById('response');
-            try {
-                const response = await fetch('/query', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query }),
-                });
-                const data = await response.json();
-                if (data.error) {
-                    responseElement.textContent = `Error: ${data.error}`;
-                } else {
-                    responseElement.textContent = data.response;
-                }
-            } catch (error) {
-                responseElement.textContent = 'An error occurred while submitting your query.';
-            }
+            const response = await fetch('/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query }),
+            });
+            const data = await response.json();
+            document.getElementById('response-text').innerText = data.analysis || data.error;
         };
     </script>
 </body>
