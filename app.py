@@ -58,6 +58,7 @@ def query():
             ],
         )
         analysis = response['choices'][0]['message']['content']
+        
         return jsonify({'analysis': analysis})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
