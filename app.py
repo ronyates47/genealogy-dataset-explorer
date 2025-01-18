@@ -51,14 +51,21 @@ def query():
         return jsonify({'error': 'No query provided'}), 400
 
     try:
-        # Handle user query (replace this with OpenAI logic if needed)
-        if user_query.lower() == "count number of rows":
-            return jsonify({'response': f"The dataset has {len(dataset)} rows."})
-        else:
-            return jsonify({'response': "I didn't understand your query. Try 'count number of rows'."})
+        # Convert the dataset to a CSV string for processing
+        dataset_string = dataset.to_csv(index=False)
+
+        # Use OpenAI's API to analyze the dataset based on the user's question
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a data analyst. Answer questions about the dataset."},
+                {"role": "user", "content": f"Dataset: {dataset_string}\n\nQuery: {user_query}"}
+            ]
+        )
+        analysis = response['choices'][0]['message']['content']
+        return jsonify({'response': analysis})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
-
