@@ -1,54 +1,66 @@
-from flask import Flask, request, jsonify, render_template
-import pandas as pd
+import os
 import requests
-from io import BytesIO
+import pandas as pd
+from flask import Flask, request, jsonify, render_template
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
+# Initialize Flask app
+app = Flask(__name__)
 
-# Dataset URL
+# URL to your dataset
 DATASET_URL = "https://yates.one-name.net/gengen/static/datasets/DNA_Study_Library.xlsx"
-dataset = None  # Global variable to store the dataset
+dataset = None  # Global variable to hold the dataset
 
-# Load the dataset during app initialization
+# Load the dataset when the app starts
+@app.before_first_request
 def load_dataset():
     global dataset
     try:
+        # Download the dataset from the server
         response = requests.get(DATASET_URL)
         response.raise_for_status()
-        dataset = pd.read_excel(BytesIO(response.content))
+        dataset = pd.read_excel(response.content)
         print("Dataset loaded successfully.")
     except Exception as e:
         print(f"Error loading dataset: {e}")
 
-# Load the dataset as soon as the app starts
-load_dataset()
-
-@app.route('/')
+# Home route to serve the HTML page
+@app.route("/")
 def home():
-    return render_template('index.html')  # Render the homepage
+    return render_template("index.html")
 
-@app.route('/query', methods=['POST'])
+# Query route for handling AI-based queries
+@app.route("/query", methods=["POST"])
 def query():
     global dataset
     if dataset is None:
-        return jsonify({'error': 'Dataset not loaded.'}), 500
+        return jsonify({"error": "Dataset not loaded."}), 500
 
-    user_query = request.json.get('query', '').strip()
+    user_query = request.json.get("query", "")
     if not user_query:
-        return jsonify({'error': 'No query provided.'}), 400
+        return jsonify({"error": "No query provided."}), 400
 
-    # Process simple queries
     try:
-        if "count number of rows" in user_query.lower():
-            count = len(dataset)
-            return jsonify({'response': f"The dataset has {count} rows."})
-        elif "show columns" in user_query.lower():
-            columns = dataset.columns.tolist()
-            return jsonify({'response': f"Columns in the dataset: {', '.join(columns)}"})
-        else:
-            return jsonify({'response': "Query not recognized. Try asking 'count number of rows' or 'show columns'."})
+        # Prepare dataset as a string
+        dataset_string = dataset.to_csv(index=False)
+
+        # Query OpenAI API
+        import openai
+        openai.api_key = os.getenv("OPENAI_API_KEY")  # Ensure the API key is set in the environment
+
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a data analyst who provides insights from datasets."},
+                {"role": "user", "content": f"Dataset: {dataset_string}\n\nQuery: {user_query}"}
+            ],
+        )
+
+        # Extract AI response
+        analysis = response['choices'][0]['message']['content']
+        return jsonify({"analysis": analysis})
     except Exception as e:
-        return jsonify({'error': f"Error processing query: {e}"}), 500
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
+
