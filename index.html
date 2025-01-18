@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Explorer</title>
+</head>
+<body>
+    <h1>Dataset Explorer</h1>
+
+    <!-- Query Input -->
+    <textarea id="query" placeholder="Ask questions about the data here (e.g., 'count number of rows')"></textarea>
+    <button id="submit-query">Submit Query</button>
+
+    <!-- Response Display -->
+    <h3>Response:</h3>
+    <div id="response"></div>
+
+    <!-- JavaScript to Handle Queries -->
+    <script>
+        document.getElementById('submit-query').onclick = async () => {
+            const query = document.getElementById('query').value;
+            const responseElement = document.getElementById('response');
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query }),
+                });
+                const data = await response.json();
+                if (data.error) {
+                    responseElement.textContent = `Error: ${data.error}`;
+                } else {
+                    responseElement.textContent = data.response;
+                }
+            } catch (error) {
+                responseElement.textContent = 'An error occurred while submitting your query.';
+            }
+        };
+    </script>
+</body>
+</html>
