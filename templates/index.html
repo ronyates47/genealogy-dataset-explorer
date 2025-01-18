@@ -8,43 +8,35 @@
 <body>
     <h1>Dataset Explorer</h1>
 
-    <!-- Input for Query -->
-    <textarea id="query" placeholder="Enter your query here..."></textarea>
+    <!-- Query Input -->
+    <textarea id="query" placeholder="Ask questions about the data here (e.g., 'count number of rows')"></textarea>
     <button id="submit-query">Submit Query</button>
 
-    <!-- Container for Response -->
-    <h2>Response:</h2>
+    <!-- Response Display -->
+    <h3>Response:</h3>
     <div id="response"></div>
 
-    <!-- JavaScript to Handle Query -->
+    <!-- JavaScript to Handle Queries -->
     <script>
         document.getElementById('submit-query').onclick = async () => {
             const query = document.getElementById('query').value;
-
-            if (!query) {
-                alert("Please enter a query.");
-                return;
-            }
-
+            const responseElement = document.getElementById('response');
             try {
                 const response = await fetch('/query', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query }),
                 });
-
                 const data = await response.json();
                 if (data.error) {
-                    alert(data.error);
+                    responseElement.textContent = `Error: ${data.error}`;
                 } else {
-                    document.getElementById('response').innerText = data.analysis;
+                    responseElement.textContent = data.response;
                 }
-            } catch (err) {
-                console.error("Error during query submission:", err);
-                alert("An error occurred while processing the query.");
+            } catch (error) {
+                responseElement.textContent = 'An error occurred while submitting your query.';
             }
         };
     </script>
 </body>
 </html>
-
