@@ -1,69 +1,63 @@
-from flask import Flask, request, jsonify, render_template
 import requests
 import pandas as pd
+from flask import Flask, request, jsonify, render_template
 from io import BytesIO
-import openai
-import os
 
-# Initialize Flask app
-app = Flask(__name__, static_folder='static', template_folder='templates')
+app = Flask(__name__, static_folder="static", template_folder="templates")
 
-# Set OpenAI API key from environment variable
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-# Dataset URL and global variable
-DATASET_PATH = "https://yates.one-name.net/gengen/static/datasets/DNA_Study_Library.xlsx"  # URL to the dataset
+# Dataset location
+DATASET_URL = "https://yates.one-name.net/gengen/static/datasets/DNA_Study_Library.xlsx"
 dataset = None  # Global variable to store the dataset
 
-# Load the dataset when the application starts
-try:
-    # Fetch the file from the URL
-    response = requests.get(DATASET_PATH)
-    response.raise_for_status()  # Raise an error for HTTP status codes >= 400
 
-    # Read the dataset into a Pandas DataFrame
-    dataset = pd.read_excel(BytesIO(response.content))
-    print("Dataset loaded successfully from URL")
-except requests.exceptions.RequestException as e:
-    print(f"Error fetching dataset from URL: {e}")
-except Exception as e:
-    print(f"Error loading dataset: {e}")
+@app.before_first_request
+def load_dataset():
+    """Fetch and load the dataset from the server."""
+    global dataset
+    try:
+        print(f"Fetching dataset from: {DATASET_URL}")
+        response = requests.get(DATASET_URL)
+        response.raise_for_status()
+        dataset = pd.read_excel(BytesIO(response.content))
+        print("Dataset loaded successfully.")
+    except Exception as e:
+        print(f"Error loading dataset: {e}")
+        dataset = None
 
-@app.route('/')
+
+@app.route("/")
 def home():
-    """Serve the HTML page."""
-    return render_template('index.html')  # Serve the HTML page
+    """Serve the main page."""
+    return render_template("index.html")
 
-@app.route('/query', methods=['POST'])
+
+@app.route("/query", methods=["POST"])
 def query():
-    """Handle user queries and interact with OpenAI."""
+    """Handle user queries on the dataset."""
     global dataset
     if dataset is None:
-        return jsonify({'error': 'Dataset not available'}), 500
+        return jsonify({"error": "Dataset not loaded. Please try again later."}), 500
 
-    user_query = request.json.get('query', '')
+    user_query = request.json.get("query", "").strip()
     if not user_query:
-        return jsonify({'error': 'No query provided'}), 400
+        return jsonify({"error": "No query provided."}), 400
 
     try:
-        # Convert the dataset to a CSV string
+        # Convert the dataset to CSV for analysis
         dataset_string = dataset.to_csv(index=False)
 
-        # Send the dataset and query to ChatGPT
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a data analyst."},
-                {"role": "user", "content": f"Dataset: {dataset_string}\n\nQuery: {user_query}"}
-            ]
-        )
+        # Simulated OpenAI response (replace with your API logic)
+        analysis = f"Simulated analysis for query: {user_query}"
 
-        # Extract the analysis result from ChatGPT's response
-        analysis = response['choices'][0]['message']['content']
-        return jsonify({'analysis': analysis})
+        return jsonify({"analysis": analysis})
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            "error": "Could not process query.",
+            "fallback": "Here is a preview of the dataset.",
+            "dataset": dataset.head(10).to_dict(orient="records")
+        })
+
 
 if __name__ == "__main__":
     app.run(debug=True)
