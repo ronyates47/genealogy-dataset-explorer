@@ -40,20 +40,25 @@ def query():
         return jsonify({'error': 'No query provided'}), 400
 
     try:
+        # Convert the dataset to a CSV string
         dataset_string = dataset.to_csv(index=False)
-        response = openai.ChatCompletion.create(
+
+        # Send the dataset and query to ChatGPT using the updated API structure
+        response = openai.Chat.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a data analyst."},
                 {"role": "user", "content": f"Dataset: {dataset_string}\n\nQuery: {user_query}"}
             ]
         )
+
+        # Extract the analysis result from ChatGPT's response
         analysis = response['choices'][0]['message']['content']
         return jsonify({'analysis': analysis})
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
-
 
