@@ -34,7 +34,7 @@ import requests
 
 # Example of sending a POST request to upload a file
 url = "https://ronyates47.pythonanywhere.com/upload"
-files = {"file": open("path_to_file.xlsx", "rb")}
+files = {"file": open("DNA_Study_Library.xlsx", "rb")}
 response = requests.post(url, files=files)
 
 print(response.text)  # Log the server's response
