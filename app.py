@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify, render_template
 import pandas as pd
 import requests
 from io import BytesIO
+import openai  # Import the OpenAI library
+import os
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -9,6 +11,8 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 DATASET_PATH = "https://yates.one-name.net/gengen/static/datasets/DNA_Study_Library.xlsx"
 dataset = None  # Global variable to store the dataset
 
+# Initialize OpenAI with your API key
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Ensure this environment variable is set
 
 # Function to load the dataset
 def load_dataset():
