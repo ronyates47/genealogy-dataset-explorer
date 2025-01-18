@@ -1,6 +1,6 @@
-flask
-pandas
-openai
-gunicorn
+openai>=1.0.0
 requests
+pandas
+Flask
+gunicorn
 openpyxl
