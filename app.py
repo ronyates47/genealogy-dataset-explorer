@@ -9,8 +9,7 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 DATASET_URL = "https://yates.one-name.net/gengen/static/datasets/DNA_Study_Library.xlsx"
 dataset = None  # Global variable to store the dataset
 
-# Load the dataset during the app startup
-@app.before_first_request
+# Load the dataset during app initialization
 def load_dataset():
     global dataset
     try:
@@ -20,6 +19,9 @@ def load_dataset():
         print("Dataset loaded successfully.")
     except Exception as e:
         print(f"Error loading dataset: {e}")
+
+# Load the dataset as soon as the app starts
+load_dataset()
 
 @app.route('/')
 def home():
